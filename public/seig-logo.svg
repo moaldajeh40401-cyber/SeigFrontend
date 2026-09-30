@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 92" role="img" aria-labelledby="title desc">
+  <title id="title">Seig</title>
+  <desc id="desc">Seig futuristic geometric wordmark</desc>
+  <defs>
+    <linearGradient id="brass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F4F0E5" />
+      <stop offset="0.48" stop-color="#D6A85F" />
+      <stop offset="0.58" stop-color="#F3EDDC" />
+      <stop offset="1" stop-color="#B78B4D" />
+    </linearGradient>
+  </defs>
+  <g fill="url(#brass)">
+    <path d="M8 17h64v13H27c-5 0-8 3-8 7s3 7 8 7h38c14 0 22 7 22 18s-8 18-22 18H8V67h55c5 0 8-3 8-7s-3-7-8-7H27C14 53 6 47 6 37S14 17 8 17Z" />
+    <path d="M101 17h70v13h-51v14h43v13h-43v10h51v13h-70Z" />
+    <rect x="191" y="17" width="18" height="63" />
+    <path d="M238 17h66v13h-47c-8 0-12 5-12 18s4 19 12 19h28V55h-22V43h41v37h-47c-21 0-31-10-31-32s10-31 31-31h-19Z" />
+  </g>
+</svg>
