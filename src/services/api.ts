@@ -33,9 +33,7 @@ export async function login(email: string, password: string) {
 }
 
 export async function register(details: { full_name: string; email: string; phone_number: string; password: string }) {
-  const result = await request<{ user: AuthUser; access_token: string }>('/api/auth/register', { method: 'POST', body: JSON.stringify(details) })
-  localStorage.setItem('leon_access_token', result.access_token)
-  return result.user
+  return request<{ user: AuthUser; verification_required: boolean; message: string }>('/api/auth/register', { method: 'POST', body: JSON.stringify(details) })
 }
 
 export async function me() {
@@ -54,11 +52,13 @@ export async function enhanceBullet(bullet: string, jobTitle?: string) {
 export async function saveResume(cvData: ResumeDraft) {
   const result = await request<{ resume: { id: number } }>('/api/resumes', { method: 'POST', body: JSON.stringify({ title: cvData.title || `${cvData.full_name} Resume`, target_role: cvData.target_role, professional_summary: cvData.professional_summary || null, linkedin_url: cvData.linkedin_url || null, github_url: cvData.github_url || null, portfolio_url: cvData.portfolio_url || null, status: 'draft' }) })
   const resumeId = result.resume.id
-  for (const item of cvData.experiences) await request(`/api/resumes/${resumeId}/experiences`, { method: 'POST', body: JSON.stringify({ company: item.company, job_title: item.job_title, location: item.location, start_date: toApiDate(item.start_date), end_date: toApiDate(item.end_date), is_current: item.is_current, achievements: item.achievements }) })
-  for (const item of cvData.educations) await request(`/api/resumes/${resumeId}/educations`, { method: 'POST', body: JSON.stringify({ institution: item.institution, degree: item.degree, field_of_study: item.field_of_study, location: item.location, start_date: toApiDate(item.start_date), end_date: toApiDate(item.end_date) }) })
-  for (const item of cvData.skills) await request(`/api/resumes/${resumeId}/skills`, { method: 'POST', body: JSON.stringify({ name: item.name }) })
-  for (const item of cvData.languages) await request(`/api/resumes/${resumeId}/languages`, { method: 'POST', body: JSON.stringify({ name: item.name, proficiency: item.proficiency }) })
-  for (const item of cvData.projects) await request(`/api/resumes/${resumeId}/projects`, { method: 'POST', body: JSON.stringify({ name: item.name, description: item.description, url: item.url, tech_stack: item.tech_stack ? { value: item.tech_stack } : {} }) })
+  await Promise.all([
+    ...cvData.experiences.map((item) => request(`/api/resumes/${resumeId}/experiences`, { method: 'POST', body: JSON.stringify({ company: item.company, job_title: item.job_title, location: item.location, start_date: toApiDate(item.start_date), end_date: toApiDate(item.end_date), is_current: item.is_current, achievements: item.achievements }) })),
+    ...cvData.educations.map((item) => request(`/api/resumes/${resumeId}/educations`, { method: 'POST', body: JSON.stringify({ institution: item.institution, degree: item.degree, field_of_study: item.field_of_study, location: item.location, start_date: toApiDate(item.start_date), end_date: toApiDate(item.end_date) }) })),
+    ...cvData.skills.map((item) => request(`/api/resumes/${resumeId}/skills`, { method: 'POST', body: JSON.stringify({ name: item.name }) })),
+    ...cvData.languages.map((item) => request(`/api/resumes/${resumeId}/languages`, { method: 'POST', body: JSON.stringify({ name: item.name, proficiency: item.proficiency }) })),
+    ...cvData.projects.map((item) => request(`/api/resumes/${resumeId}/projects`, { method: 'POST', body: JSON.stringify({ name: item.name, description: item.description, url: item.url, tech_stack: item.tech_stack ? { value: item.tech_stack } : {} }) })),
+  ])
   return resumeId
 }
 
