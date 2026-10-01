@@ -86,8 +86,11 @@ export async function generatePdf(cvData: ResumeDraft) {
   const link = document.createElement('a')
   link.href = URL.createObjectURL(blob)
   link.download = `${(cvData.full_name || 'Resume').trim().replace(/[^a-z0-9]+/gi, '_')}_Resume.pdf`
+  link.style.display = 'none'
+  document.body.appendChild(link)
   link.click()
-  URL.revokeObjectURL(link.href)
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(link.href), 1000)
 }
 
 export const api = { checkHealth, login, register, me, logout, enhanceBullet, saveResume, loadResume, generatePdf }
