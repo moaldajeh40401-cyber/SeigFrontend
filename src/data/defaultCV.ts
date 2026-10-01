@@ -7,7 +7,7 @@ export const defaultCV: ResumeDraft = {
   email: 'mo.aldajeh40401@gmail.com',
   phone: '0791220430',
   location: 'Amman, Jordan',
-  professional_summary: 'Full-Stack Mobile Developer with 1.5 years of hands-on experience developing mobile and web applications across frontend, backend, databases, and APIs. Senior Computer Information Systems student at the University of Jordan - Aqaba and Tech Team Leader at the IEEE Student Branch. Experienced in leading technical teams, coordinating projects, and developing practical software solutions. Passionate about building scalable, user-focused applications while combining technical expertise with leadership and teamwork.',
+  professional_summary: 'Full-Stack Mobile Developer with one and a half years of hands-on experience developing mobile and web applications across frontend, backend, databases, and APIs. Senior Computer Information Systems student at the University of Jordan - Aqaba and Tech Team Leader at the IEEE Student Branch. Experienced in leading technical teams, coordinating projects, and developing practical software solutions. Passionate about building scalable, user-focused applications while combining technical expertise with leadership and teamwork.',
   linkedin_url: 'https://www.linkedin.com/in/m0hmad-aldajah',
   github_url: '',
   portfolio_url: 'https://portfolio-steel-three-37.vercel.app/',

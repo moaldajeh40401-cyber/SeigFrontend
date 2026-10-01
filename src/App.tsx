@@ -379,8 +379,8 @@ function App() {
     try {
       await api.saveResume(resume);
       setNotice("Draft saved to the backend.");
-    } catch {
-      setNotice("Draft is ready locally. Sign in to save it to the backend.");
+    } catch (requestError) {
+      setNotice(requestError instanceof Error ? requestError.message : "Draft could not be saved to the backend.");
     } finally {
       setBusy(false);
     }
