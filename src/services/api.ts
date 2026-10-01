@@ -76,8 +76,7 @@ export async function loadResume(id: number): Promise<ResumeDraft> {
 
 export async function generatePdf(cvData: ResumeDraft) {
   const token = localStorage.getItem('leon_access_token')
-  const resumeId = await saveResume(cvData)
-  const response = await fetch(`${API_BASE_URL}/api/resumes/${resumeId}/download`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  const response = await fetch(`${API_BASE_URL}/api/resumes/export`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(cvData) })
   if (!response.ok) {
     const error = await response.json().catch(() => null)
     throw new Error(error?.message || `PDF request failed with ${response.status}`)
