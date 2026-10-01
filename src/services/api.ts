@@ -36,17 +36,13 @@ export async function register(details: { full_name: string; email: string; phon
   const controller = new AbortController()
   const timeout = window.setTimeout(() => controller.abort(), 12000)
   try {
-    return await request<{ user?: AuthUser; verification_required: boolean; verification_email_sent: boolean; message: string }>('/api/auth/register', { method: 'POST', body: JSON.stringify(details), signal: controller.signal })
+    return await request<{ user: AuthUser; message: string }>('/api/auth/register', { method: 'POST', body: JSON.stringify(details), signal: controller.signal })
   } catch (error) {
     if (controller.signal.aborted) throw new Error('Registration is taking too long. Check your connection and retry with the same email and password.')
     throw error
   } finally {
     window.clearTimeout(timeout)
   }
-}
-
-export async function verifyEmail(token: string) {
-  return request<{ verified: boolean; message: string }>(`/api/auth/verify-email?token=${encodeURIComponent(token)}`)
 }
 
 export async function me() {
@@ -105,4 +101,4 @@ export async function generatePdf(cvData: ResumeDraft) {
   window.setTimeout(() => URL.revokeObjectURL(link.href), 1000)
 }
 
-export const api = { checkHealth, login, register, verifyEmail, me, logout, enhanceBullet, saveResume, loadResume, generatePdf }
+export const api = { checkHealth, login, register, me, logout, enhanceBullet, saveResume, loadResume, generatePdf }

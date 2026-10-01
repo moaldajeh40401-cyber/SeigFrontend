@@ -269,13 +269,12 @@ function ExperienceEditor({
   );
 }
 
-function AuthPanel({ onAuthenticated, initialNotice = "" }: { onAuthenticated: (user: AuthUser) => void; initialNotice?: string }) {
+function AuthPanel({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [form, setForm] = useState({ full_name: "", email: "", phone_number: "", location: "", password: "" });
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState(initialNotice);
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
-  useEffect(() => { if (initialNotice) setNotice(initialNotice); }, [initialNotice]);
   const update = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setError(""); setNotice(""); setLoading(true);
@@ -285,7 +284,7 @@ function AuthPanel({ onAuthenticated, initialNotice = "" }: { onAuthenticated: (
       } else {
         const result = await api.register(form);
         setNotice(result.message);
-        if (result.verification_email_sent) setMode("login");
+        setMode("login");
       }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Authentication failed. Check your details and try again.");
@@ -297,7 +296,6 @@ function AuthPanel({ onAuthenticated, initialNotice = "" }: { onAuthenticated: (
 function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
-  const [authNotice, setAuthNotice] = useState("");
   const [resume, setResume] = useState<ResumeDraft>(() =>
     structuredClone(defaultCV),
   );
@@ -316,22 +314,8 @@ function App() {
     if (!localStorage.getItem("leon_access_token")) { setAuthChecking(false); return; }
     api.me().then(setAuthUser).catch(() => api.logout()).finally(() => setAuthChecking(false));
   }, []);
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    const token = url.searchParams.get("verify_token");
-    if (url.searchParams.get("verified") === "1") setAuthNotice("Email verified. You can sign in now.");
-    if (!token) return;
-    api.verifyEmail(token)
-      .then((result) => setAuthNotice(result.message))
-      .catch((requestError) => setAuthNotice(requestError instanceof Error ? requestError.message : "Email verification failed. Request a new verification email."))
-      .finally(() => {
-        url.searchParams.delete("verify_token");
-        url.searchParams.delete("verified");
-        window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
-      });
-  }, []);
   if (authChecking) return <main className="auth-shell"><LoaderCircle className="spin auth-loading" size={28} /></main>;
-  if (!authUser) return <AuthPanel onAuthenticated={setAuthUser} initialNotice={authNotice} />;
+  if (!authUser) return <AuthPanel onAuthenticated={setAuthUser} />;
   const update = (field: keyof ResumeDraft, value: string) =>
     setResume((current) => ({ ...current, [field]: value }));
   const updateItem = (
