@@ -269,32 +269,35 @@ function ExperienceEditor({
   );
 }
 
-function AuthPanel({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => void }) {
+function AuthPanel({ onAuthenticated, initialNotice = "" }: { onAuthenticated: (user: AuthUser) => void; initialNotice?: string }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [form, setForm] = useState({ full_name: "", email: "", phone_number: "", location: "", password: "" });
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState(initialNotice);
   const [loading, setLoading] = useState(false);
+  useEffect(() => { if (initialNotice) setNotice(initialNotice); }, [initialNotice]);
   const update = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault(); setError(""); setLoading(true);
+    event.preventDefault(); setError(""); setNotice(""); setLoading(true);
     try {
       if (mode === "login") {
         onAuthenticated(await api.login(form.email, form.password));
       } else {
         const result = await api.register(form);
-        setMode("login");
-        setError(result.message);
+        setNotice(result.message);
+        if (result.verification_email_sent) setMode("login");
       }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Authentication failed. Check your details and try again.");
     } finally { setLoading(false); }
   };
-  return <main className="auth-shell"><div className="auth-panel"><div className="auth-brand"><img className="brand-symbol" src="/seig-favicon.svg" alt="" /><img className="brand-wordmark" src="/seig-wordmark.svg" alt="Seig" /></div><h1>{mode === "login" ? "Sign in" : "Create account"}</h1><div className="auth-tabs"><button className={mode === "login" ? "active" : ""} type="button" onClick={() => { setMode("login"); setError(""); }}>Sign in</button><button className={mode === "register" ? "active" : ""} type="button" onClick={() => { setMode("register"); setError(""); }}>Create account</button></div><form onSubmit={submit}>{mode === "register" && <><label className="auth-field"><span>Full name</span><input required value={form.full_name} onChange={(event) => update("full_name", event.target.value)} /></label><label className="auth-field"><span>Phone</span><input required type="tel" value={form.phone_number} onChange={(event) => update("phone_number", event.target.value)} /></label></>}<label className="auth-field"><span>Email</span><input required type="email" autoComplete="email" value={form.email} onChange={(event) => update("email", event.target.value)} /></label><label className="auth-field"><span>Password</span><input required minLength={8} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={(event) => update("password", event.target.value)} /></label>{error && <p className="auth-error">{error}</p>}<button className="button primary auth-submit" type="submit" disabled={loading}>{loading ? <LoaderCircle className="spin" size={16} /> : null}{loading ? "Connecting..." : mode === "login" ? "Sign in to Seig" : "Create account"}</button></form></div></main>;
+  return <main className="auth-shell"><div className="auth-panel"><div className="auth-brand"><img className="brand-symbol" src="/seig-favicon.svg" alt="" /><img className="brand-wordmark" src="/seig-wordmark.svg" alt="Seig" /></div><h1>{mode === "login" ? "Sign in" : "Create account"}</h1><div className="auth-tabs"><button className={mode === "login" ? "active" : ""} type="button" onClick={() => { setMode("login"); setError(""); setNotice(""); }}>Sign in</button><button className={mode === "register" ? "active" : ""} type="button" onClick={() => { setMode("register"); setError(""); setNotice(""); }}>Create account</button></div><form onSubmit={submit}>{mode === "register" && <><label className="auth-field"><span>Full name</span><input required value={form.full_name} onChange={(event) => update("full_name", event.target.value)} /></label><label className="auth-field"><span>Phone</span><input required type="tel" value={form.phone_number} onChange={(event) => update("phone_number", event.target.value)} /></label></>}<label className="auth-field"><span>Email</span><input required type="email" autoComplete="email" value={form.email} onChange={(event) => update("email", event.target.value)} /></label><label className="auth-field"><span>Password</span><input required minLength={8} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={(event) => update("password", event.target.value)} /></label>{error && <p className="auth-error" role="alert">{error}</p>}{notice && <p className="auth-success" role="status">{notice}</p>}<button className="button primary auth-submit" type="submit" disabled={loading}>{loading ? <LoaderCircle className="spin" size={16} /> : null}{loading ? "Please wait..." : mode === "login" ? "Sign in to Seig" : "Create account"}</button></form></div></main>;
 }
 
 function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
+  const [authNotice, setAuthNotice] = useState("");
   const [resume, setResume] = useState<ResumeDraft>(() =>
     structuredClone(defaultCV),
   );
@@ -313,8 +316,22 @@ function App() {
     if (!localStorage.getItem("leon_access_token")) { setAuthChecking(false); return; }
     api.me().then(setAuthUser).catch(() => api.logout()).finally(() => setAuthChecking(false));
   }, []);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get("verify_token");
+    if (url.searchParams.get("verified") === "1") setAuthNotice("Email verified. You can sign in now.");
+    if (!token) return;
+    api.verifyEmail(token)
+      .then((result) => setAuthNotice(result.message))
+      .catch((requestError) => setAuthNotice(requestError instanceof Error ? requestError.message : "Email verification failed. Request a new verification email."))
+      .finally(() => {
+        url.searchParams.delete("verify_token");
+        url.searchParams.delete("verified");
+        window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+      });
+  }, []);
   if (authChecking) return <main className="auth-shell"><LoaderCircle className="spin auth-loading" size={28} /></main>;
-  if (!authUser) return <AuthPanel onAuthenticated={setAuthUser} />;
+  if (!authUser) return <AuthPanel onAuthenticated={setAuthUser} initialNotice={authNotice} />;
   const update = (field: keyof ResumeDraft, value: string) =>
     setResume((current) => ({ ...current, [field]: value }));
   const updateItem = (
