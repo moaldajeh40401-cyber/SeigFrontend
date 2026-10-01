@@ -1,10 +1,11 @@
 export type Experience = { id: string | number; company: string; job_title: string; location: string; start_date: string; end_date: string; is_current: boolean; achievements: string[] }
 export type Education = { id: string | number; institution: string; degree: string; field_of_study: string; location: string; start_date: string; end_date: string }
 export type Skill = { id: string | number; name: string }
+export type Language = { id: string | number; name: string; proficiency: string }
 export type Project = { id: string | number; name: string; description: string; url: string; tech_stack: string }
 export type BulletSuggestion = { id: number; text: string; keywords: string[]; focus: string }
 export type AuthUser = { id: number; full_name: string; email: string; phone_number: string | null; location: string | null; created_at: string; updated_at: string }
-export type ResumeDraft = { id?: number; title: string; target_role: string; full_name: string; email: string; phone: string; location: string; professional_summary: string; linkedin_url: string; github_url: string; portfolio_url: string; experiences: Experience[]; educations: Education[]; skills: Skill[]; projects: Project[] }
+export type ResumeDraft = { id?: number; title: string; target_role: string; full_name: string; email: string; phone: string; location: string; professional_summary: string; linkedin_url: string; github_url: string; portfolio_url: string; experiences: Experience[]; educations: Education[]; skills: Skill[]; languages: Language[]; projects: Project[] }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000'
 
@@ -56,19 +57,21 @@ export async function saveResume(cvData: ResumeDraft) {
   for (const item of cvData.experiences) await request(`/api/resumes/${resumeId}/experiences`, { method: 'POST', body: JSON.stringify({ company: item.company, job_title: item.job_title, location: item.location, start_date: toApiDate(item.start_date), end_date: toApiDate(item.end_date), is_current: item.is_current, achievements: item.achievements }) })
   for (const item of cvData.educations) await request(`/api/resumes/${resumeId}/educations`, { method: 'POST', body: JSON.stringify({ institution: item.institution, degree: item.degree, field_of_study: item.field_of_study, location: item.location, start_date: toApiDate(item.start_date), end_date: toApiDate(item.end_date) }) })
   for (const item of cvData.skills) await request(`/api/resumes/${resumeId}/skills`, { method: 'POST', body: JSON.stringify({ name: item.name }) })
+  for (const item of cvData.languages) await request(`/api/resumes/${resumeId}/languages`, { method: 'POST', body: JSON.stringify({ name: item.name, proficiency: item.proficiency }) })
   for (const item of cvData.projects) await request(`/api/resumes/${resumeId}/projects`, { method: 'POST', body: JSON.stringify({ name: item.name, description: item.description, url: item.url, tech_stack: item.tech_stack ? { value: item.tech_stack } : {} }) })
   return resumeId
 }
 
 export async function loadResume(id: number): Promise<ResumeDraft> {
-  const [{ resume }, experiences, educations, skills, projects] = await Promise.all([
+  const [{ resume }, experiences, educations, skills, languages, projects] = await Promise.all([
     request<{ resume: Record<string, unknown> }>(`/api/resumes/${id}`),
     request<{ items: Experience[] }>(`/api/resumes/${id}/experiences`),
     request<{ items: Education[] }>(`/api/resumes/${id}/educations`),
     request<{ items: Skill[] }>(`/api/resumes/${id}/skills`),
+    request<{ items: Language[] }>(`/api/resumes/${id}/languages`),
     request<{ items: Project[] }>(`/api/resumes/${id}/projects`),
   ])
-  return { ...resume, id, full_name: '', email: '', phone: '', location: '', experiences: experiences.items.map((item) => ({ ...item, start_date: toMonth(item.start_date), end_date: toMonth(item.end_date) })), educations: educations.items.map((item) => ({ ...item, start_date: toMonth(item.start_date), end_date: toMonth(item.end_date) })), skills: skills.items, projects: projects.items } as ResumeDraft
+  return { ...resume, id, full_name: '', email: '', phone: '', location: '', experiences: experiences.items.map((item) => ({ ...item, start_date: toMonth(item.start_date), end_date: toMonth(item.end_date) })), educations: educations.items.map((item) => ({ ...item, start_date: toMonth(item.start_date), end_date: toMonth(item.end_date) })), skills: skills.items, languages: languages.items, projects: projects.items } as ResumeDraft
 }
 
 export async function generatePdf(cvData: ResumeDraft) {
@@ -78,7 +81,10 @@ export async function generatePdf(cvData: ResumeDraft) {
     const resumeId = await saveResume(cvData)
     response = await fetch(`${API_BASE_URL}/api/resumes/${resumeId}/download`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
   }
-  if (!response.ok) throw new Error(`PDF request failed with ${response.status}`)
+  if (!response.ok) {
+    const error = await response.json().catch(() => null)
+    throw new Error(error?.message || `PDF request failed with ${response.status}`)
+  }
   const blob = await response.blob()
   const link = document.createElement('a')
   link.href = URL.createObjectURL(blob)

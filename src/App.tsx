@@ -19,7 +19,7 @@ import {
 import "./App.css";
 
 type SectionKey =
-  "personal" | "experience" | "education" | "skills" | "projects";
+  "personal" | "experience" | "education" | "skills" | "languages" | "projects";
 function Field({
   label,
   value,
@@ -284,7 +284,7 @@ function AuthPanel({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => v
       setError(requestError instanceof Error ? requestError.message : "Authentication failed. Check your details and try again.");
     } finally { setLoading(false); }
   };
-  return <main className="auth-shell"><div className="auth-panel"><div className="auth-brand"><img className="brand-symbol" src="/seig-favicon.svg" alt="" /><img className="brand-wordmark" src="/seig-wordmark.svg" alt="Seig" /></div><span className="eyebrow">PRIVATE RESUME WORKSPACE</span><h1>{mode === "login" ? "Welcome back." : "Build your next chapter."}</h1><p className="auth-copy">Your resume data stays connected to your Leon backend and is available whenever you return.</p><div className="auth-tabs"><button className={mode === "login" ? "active" : ""} type="button" onClick={() => { setMode("login"); setError(""); }}>Sign in</button><button className={mode === "register" ? "active" : ""} type="button" onClick={() => { setMode("register"); setError(""); }}>Create account</button></div><form onSubmit={submit}>{mode === "register" && <><label className="auth-field"><span>Full name</span><input required value={form.full_name} onChange={(event) => update("full_name", event.target.value)} /></label><label className="auth-field"><span>Phone</span><input required type="tel" value={form.phone_number} onChange={(event) => update("phone_number", event.target.value)} /></label><label className="auth-field"><span>Location</span><input required value={form.location} onChange={(event) => update("location", event.target.value)} /></label></>}<label className="auth-field"><span>Email</span><input required type="email" autoComplete="email" value={form.email} onChange={(event) => update("email", event.target.value)} /></label><label className="auth-field"><span>Password</span><input required minLength={8} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={(event) => update("password", event.target.value)} /></label>{error && <p className="auth-error">{error}</p>}<button className="button primary auth-submit" type="submit" disabled={loading}>{loading ? <LoaderCircle className="spin" size={16} /> : null}{loading ? "Connecting..." : mode === "login" ? "Sign in to Seig" : "Create my workspace"}</button></form><small className="auth-footnote">Your session stays active until you choose Sign out.</small></div></main>;
+  return <main className="auth-shell"><div className="auth-panel"><div className="auth-brand"><img className="brand-symbol" src="/seig-favicon.svg" alt="" /><img className="brand-wordmark" src="/seig-wordmark.svg" alt="Seig" /></div><h1>{mode === "login" ? "Sign in" : "Create account"}</h1><div className="auth-tabs"><button className={mode === "login" ? "active" : ""} type="button" onClick={() => { setMode("login"); setError(""); }}>Sign in</button><button className={mode === "register" ? "active" : ""} type="button" onClick={() => { setMode("register"); setError(""); }}>Create account</button></div><form onSubmit={submit}>{mode === "register" && <><label className="auth-field"><span>Full name</span><input required value={form.full_name} onChange={(event) => update("full_name", event.target.value)} /></label><label className="auth-field"><span>Phone</span><input required type="tel" value={form.phone_number} onChange={(event) => update("phone_number", event.target.value)} /></label><label className="auth-field"><span>Location</span><input required value={form.location} onChange={(event) => update("location", event.target.value)} /></label></>}<label className="auth-field"><span>Email</span><input required type="email" autoComplete="email" value={form.email} onChange={(event) => update("email", event.target.value)} /></label><label className="auth-field"><span>Password</span><input required minLength={8} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={form.password} onChange={(event) => update("password", event.target.value)} /></label>{error && <p className="auth-error">{error}</p>}<button className="button primary auth-submit" type="submit" disabled={loading}>{loading ? <LoaderCircle className="spin" size={16} /> : null}{loading ? "Connecting..." : mode === "login" ? "Sign in to Seig" : "Create account"}</button></form></div></main>;
 }
 
 function App() {
@@ -318,7 +318,7 @@ function App() {
   const update = (field: keyof ResumeDraft, value: string) =>
     setResume((current) => ({ ...current, [field]: value }));
   const updateItem = (
-    section: "experiences" | "educations" | "skills" | "projects",
+    section: "experiences" | "educations" | "skills" | "languages" | "projects",
     id: string | number,
     field: string,
     value: string | string[] | boolean,
@@ -330,7 +330,7 @@ function App() {
       ),
     }));
   const addItem = (
-    section: "experiences" | "educations" | "skills" | "projects",
+    section: "experiences" | "educations" | "skills" | "languages" | "projects",
   ) =>
     setResume((current) => ({
       ...current,
@@ -359,12 +359,14 @@ function App() {
                 }
               : section === "skills"
                 ? { name: "" }
-                : { name: "", description: "", url: "", tech_stack: "" }),
+                : section === "languages"
+                  ? { name: "", proficiency: "" }
+                  : { name: "", description: "", url: "", tech_stack: "" }),
         },
       ],
     }));
   const removeItem = (
-    section: "experiences" | "educations" | "skills" | "projects",
+    section: "experiences" | "educations" | "skills" | "languages" | "projects",
     id: string | number,
   ) =>
     setResume((current) => ({
@@ -389,8 +391,8 @@ function App() {
     try {
       await api.generatePdf(resume);
       setNotice("PDF downloaded successfully.");
-    } catch {
-      setNotice("PDF export needs an authenticated backend session.");
+    } catch (requestError) {
+      setNotice(requestError instanceof Error ? requestError.message : "PDF export failed. Check the backend logs.");
     } finally {
       setBusy(false);
     }
@@ -404,6 +406,7 @@ function App() {
     { key: "experience", label: "Experience" },
     { key: "education", label: "Education" },
     { key: "skills", label: "Skills" },
+    { key: "languages", label: "Languages" },
     { key: "projects", label: "Projects" },
   ];
   return (
@@ -672,6 +675,38 @@ function App() {
               ))}
             </>
           )}
+          {activeSection === "languages" && (
+            <>
+              <SectionHeading
+                title="Languages"
+                description="Add languages and proficiency levels for a complete ATS profile."
+                onAdd={() => addItem("languages")}
+              />
+              {resume.languages.map((item) => (
+                <div className="repeat-card compact" key={item.id}>
+                  <Field
+                    label="Language"
+                    value={item.name}
+                    onChange={(value) => updateItem("languages", item.id, "name", value)}
+                  />
+                  <Field
+                    label="Proficiency"
+                    value={item.proficiency}
+                    placeholder="Native, C1 Advanced"
+                    onChange={(value) => updateItem("languages", item.id, "proficiency", value)}
+                  />
+                  <button
+                    className="remove-button"
+                    type="button"
+                    title="Remove language"
+                    onClick={() => removeItem("languages", item.id)}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
           {activeSection === "projects" && (
             <>
               <SectionHeading
@@ -821,6 +856,14 @@ function App() {
                     .join(" · ")}
                 </p>
               </PreviewSection>
+              <PreviewSection title="LANGUAGES">
+                <p>
+                  {resume.languages
+                    .map((item) => `${item.name}${item.proficiency ? ` (${item.proficiency})` : ""}`)
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </PreviewSection>
               <PreviewSection title="PROJECTS">
                 {resume.projects.map((item) => (
                   <div className="resume-entry" key={item.id}>
@@ -840,15 +883,7 @@ function App() {
       <footer className="app-footer">
         <div>
           <span>© 2026 Mohammad Aldajeh. All rights reserved.</span>
-          <span>
-            Engineered for Applicant Tracking Systems (ATS) compliance.
-          </span>
         </div>
-        <nav aria-label="Footer">
-          <a href="#terms">Terms</a>
-          <a href="#privacy">Privacy</a>
-          <a href="#ats-guides">ATS Guides</a>
-        </nav>
       </footer>
     </main>
   );

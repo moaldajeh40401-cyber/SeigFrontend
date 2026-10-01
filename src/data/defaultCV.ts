@@ -47,6 +47,10 @@ export const defaultCV: ResumeDraft = {
       name: 'Flutter, Dart, Python, Flask, REST APIs, SQL, PostgreSQL, Firebase, Authentication, Database Integration, Responsive UI, Testing, Debugging, Git, Qwen, Technical Leadership',
     },
   ],
+  languages: [
+    { id: 'language-arabic', name: 'Arabic', proficiency: 'Native' },
+    { id: 'language-english', name: 'English', proficiency: 'C1 Advanced' },
+  ],
   projects: [
     {
       id: 'project-seig',
@@ -69,6 +73,6 @@ export function createEmptyCV(): ResumeDraft {
   return {
     ...defaultCV,
     title: '', target_role: '', full_name: '', email: '', phone: '', location: '', professional_summary: '', linkedin_url: '', github_url: '', portfolio_url: '',
-    experiences: [], educations: [], skills: [], projects: [],
+    experiences: [], educations: [], skills: [], languages: [], projects: [],
   }
 }
