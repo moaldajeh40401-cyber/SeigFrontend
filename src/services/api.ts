@@ -32,7 +32,7 @@ export async function login(email: string, password: string) {
   return result.user
 }
 
-export async function register(details: { full_name: string; email: string; phone_number: string; location: string; password: string }) {
+export async function register(details: { full_name: string; email: string; phone_number: string; password: string }) {
   const result = await request<{ user: AuthUser; access_token: string }>('/api/auth/register', { method: 'POST', body: JSON.stringify(details) })
   localStorage.setItem('leon_access_token', result.access_token)
   return result.user
@@ -76,11 +76,8 @@ export async function loadResume(id: number): Promise<ResumeDraft> {
 
 export async function generatePdf(cvData: ResumeDraft) {
   const token = localStorage.getItem('leon_access_token')
-  let response = await fetch(`${API_BASE_URL}/api/generate-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(cvData) })
-  if (response.status === 404) {
-    const resumeId = await saveResume(cvData)
-    response = await fetch(`${API_BASE_URL}/api/resumes/${resumeId}/download`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
-  }
+  const resumeId = await saveResume(cvData)
+  const response = await fetch(`${API_BASE_URL}/api/resumes/${resumeId}/download`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
   if (!response.ok) {
     const error = await response.json().catch(() => null)
     throw new Error(error?.message || `PDF request failed with ${response.status}`)
