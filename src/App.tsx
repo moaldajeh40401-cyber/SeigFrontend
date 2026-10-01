@@ -278,8 +278,13 @@ function AuthPanel({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => v
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setError(""); setLoading(true);
     try {
-      const user = mode === "login" ? await api.login(form.email, form.password) : await api.register(form);
-      onAuthenticated(user);
+      if (mode === "login") {
+        onAuthenticated(await api.login(form.email, form.password));
+      } else {
+        const result = await api.register(form);
+        setMode("login");
+        setError(result.message);
+      }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Authentication failed. Check your details and try again.");
     } finally { setLoading(false); }
@@ -290,7 +295,6 @@ function AuthPanel({ onAuthenticated }: { onAuthenticated: (user: AuthUser) => v
 function App() {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
-  const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
   const [resume, setResume] = useState<ResumeDraft>(() =>
     structuredClone(defaultCV),
   );
@@ -300,11 +304,7 @@ function App() {
   );
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    const pingBackend = () => {
-      api.checkHealth()
-        .then((health) => setBackendStatus(health.status === "healthy" ? "online" : "offline"))
-        .catch(() => setBackendStatus("offline"));
-    };
+    const pingBackend = () => { api.checkHealth().catch(() => undefined); };
     pingBackend();
     const interval = window.setInterval(pingBackend, 5 * 60 * 1000);
     return () => window.clearInterval(interval);
@@ -424,9 +424,6 @@ function App() {
         </div>
         <div className="top-actions">
           <button className="button secondary" type="button" onClick={signOut}>Sign out</button>
-          <span className={`backend-state ${backendStatus}`} title="Render backend health">
-            <span className="status-dot" /> {backendStatus === "checking" ? "Checking backend" : backendStatus === "online" ? "Backend connected" : "Backend offline"}
-          </span>
           <span className="save-state">
             <span className="status-dot" /> Auto-saved locally
           </span>
