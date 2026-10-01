@@ -401,6 +401,12 @@ function App() {
     setResume(createEmptyCV());
     setNotice("Resume cleared. Start with a blank profile.");
   };
+  const signOut = () => {
+    const confirmed = window.confirm("Are you sure you want to sign out? You will need to sign in again to access your workspace.");
+    if (!confirmed) return;
+    api.logout();
+    setAuthUser(null);
+  };
   const sections: { key: SectionKey; label: string }[] = [
     { key: "personal", label: "Personal info" },
     { key: "experience", label: "Experience" },
@@ -417,8 +423,7 @@ function App() {
           <img className="brand-wordmark" src="/seig-wordmark.svg" alt="Seig" />
         </div>
         <div className="top-actions">
-          <span className="account-name">{authUser.full_name}</span>
-          <button className="button secondary" type="button" onClick={() => { api.logout(); setAuthUser(null); }}>Sign out</button>
+          <button className="button secondary" type="button" onClick={signOut}>Sign out</button>
           <span className={`backend-state ${backendStatus}`} title="Render backend health">
             <span className="status-dot" /> {backendStatus === "checking" ? "Checking backend" : backendStatus === "online" ? "Backend connected" : "Backend offline"}
           </span>
